@@ -54,25 +54,30 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 
 	private final List<ConsulManagementRegistrationCustomizer> managementRegistrationCustomizers;
 
+	private final ConsulAutoRegistrationTagsResolver tagsResolver;
+
 	@Deprecated
 	public ConsulAutoRegistration(NewService service,
 			AutoServiceRegistrationProperties autoServiceRegistrationProperties,
 			ConsulDiscoveryProperties properties, ApplicationContext context,
 			HeartbeatProperties heartbeatProperties) {
 		this(service, autoServiceRegistrationProperties, properties, context,
-				heartbeatProperties, Collections.emptyList());
+				heartbeatProperties, Collections.emptyList(),
+				new ConsulAutoRegistrationPropertyTagsResolver(properties));
 	}
 
 	public ConsulAutoRegistration(NewService service,
 			AutoServiceRegistrationProperties autoServiceRegistrationProperties,
 			ConsulDiscoveryProperties properties, ApplicationContext context,
 			HeartbeatProperties heartbeatProperties,
-			List<ConsulManagementRegistrationCustomizer> managementRegistrationCustomizers) {
+			List<ConsulManagementRegistrationCustomizer> managementRegistrationCustomizers,
+			ConsulAutoRegistrationTagsResolver tagsResolver) {
 		super(service, properties);
 		this.autoServiceRegistrationProperties = autoServiceRegistrationProperties;
 		this.context = context;
 		this.heartbeatProperties = heartbeatProperties;
 		this.managementRegistrationCustomizers = managementRegistrationCustomizers;
+		this.tagsResolver = tagsResolver;
 	}
 
 	public static ConsulAutoRegistration registration(
@@ -80,7 +85,8 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 			ConsulDiscoveryProperties properties, ApplicationContext context,
 			List<ConsulRegistrationCustomizer> registrationCustomizers,
 			List<ConsulManagementRegistrationCustomizer> managementRegistrationCustomizers,
-			HeartbeatProperties heartbeatProperties) {
+			HeartbeatProperties heartbeatProperties,
+			ConsulAutoRegistrationTagsResolver tagsResolver) {
 
 		NewService service = new NewService();
 		String appName = getAppName(properties, context.getEnvironment());
@@ -89,7 +95,7 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 			service.setAddress(properties.getHostname());
 		}
 		service.setName(normalizeForDns(appName));
-		service.setTags(new ArrayList<>(properties.getTags()));
+		service.setTags(new ArrayList<>(tagsResolver.resolve()));
 		service.setEnableTagOverride(properties.getEnableTagOverride());
 		service.setMeta(getMetadata(properties));
 
@@ -102,7 +108,7 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 
 		ConsulAutoRegistration registration = new ConsulAutoRegistration(service,
 				autoServiceRegistrationProperties, properties, context,
-				heartbeatProperties, managementRegistrationCustomizers);
+				heartbeatProperties, managementRegistrationCustomizers, tagsResolver);
 		customize(registrationCustomizers, registration);
 		return registration;
 	}
@@ -139,7 +145,8 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 			AutoServiceRegistrationProperties autoServiceRegistrationProperties,
 			ConsulDiscoveryProperties properties, ApplicationContext context,
 			List<ConsulManagementRegistrationCustomizer> managementRegistrationCustomizers,
-			HeartbeatProperties heartbeatProperties) {
+			HeartbeatProperties heartbeatProperties,
+			ConsulAutoRegistrationTagsResolver tagsResolver) {
 		NewService management = new NewService();
 		management.setId(getManagementServiceId(properties, context));
 		management.setAddress(properties.getHostname());
@@ -155,7 +162,7 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 		}
 		ConsulAutoRegistration registration = new ConsulAutoRegistration(management,
 				autoServiceRegistrationProperties, properties, context,
-				heartbeatProperties, managementRegistrationCustomizers);
+				heartbeatProperties, managementRegistrationCustomizers, tagsResolver);
 		managementCustomize(managementRegistrationCustomizers, registration);
 		return registration;
 	}
@@ -353,7 +360,7 @@ public class ConsulAutoRegistration extends ConsulRegistration {
 	public ConsulAutoRegistration managementRegistration() {
 		return managementRegistration(this.autoServiceRegistrationProperties,
 				getProperties(), this.context, this.managementRegistrationCustomizers,
-				this.heartbeatProperties);
+				this.heartbeatProperties, this.tagsResolver);
 	}
 
 }

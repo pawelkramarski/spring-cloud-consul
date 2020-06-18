@@ -73,15 +73,24 @@ public class ConsulAutoServiceRegistrationAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	public ConsulAutoRegistrationTagsResolver consulAutoRegistrationTagsResolver(
+			ConsulDiscoveryProperties properties) {
+		return new ConsulAutoRegistrationPropertyTagsResolver(properties);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	public ConsulAutoRegistration consulRegistration(
 			AutoServiceRegistrationProperties autoServiceRegistrationProperties,
 			ConsulDiscoveryProperties properties, ApplicationContext applicationContext,
 			ObjectProvider<List<ConsulRegistrationCustomizer>> registrationCustomizers,
 			ObjectProvider<List<ConsulManagementRegistrationCustomizer>> managementRegistrationCustomizers,
-			HeartbeatProperties heartbeatProperties) {
+			HeartbeatProperties heartbeatProperties,
+			ConsulAutoRegistrationTagsResolver tagsResolver) {
 		return ConsulAutoRegistration.registration(autoServiceRegistrationProperties,
 				properties, applicationContext, registrationCustomizers.getIfAvailable(),
-				managementRegistrationCustomizers.getIfAvailable(), heartbeatProperties);
+				managementRegistrationCustomizers.getIfAvailable(), heartbeatProperties,
+				tagsResolver);
 	}
 
 	@Configuration(proxyBeanMethods = false)
